@@ -10,7 +10,6 @@ import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 device = 'cuda' if cuda.is_available() else 'cpu'
 #device = 'cpu'
-import os
 
 
 df = pd.read_csv(r'C:\Users\cadep\Desktop\Work\Dude-Deals\Modeling\Categories - All (2).csv', header=0)
@@ -186,42 +185,35 @@ for epoch in range(EPOCHS):
 def valid(model, testing_loader):
     model.eval()
     tr_loss = 0
+    n_correct = 0
     nb_tr_steps = 0
     nb_tr_examples = 0
-    n_correct = 0
-    
+    n_correct = 0; n_wrong = 0; total = 0
     with torch.no_grad():
         for _, data in enumerate(testing_loader, 0):
-            ids = data['ids'].to(device, dtype=torch.long)
-            mask = data['mask'].to(device, dtype=torch.long)
-            targets = data['targets'].to(device, dtype=torch.long)
-
-            outputs = model(ids, mask)
-            outputs_detached = outputs.detach()  # Detach the tensor from the computation graph
-            outputs_squeezed = outputs_detached.squeeze()  # Squeeze the tensor
-            loss = loss_function(outputs_squeezed, targets)
-            loss.backward()
-            
+            ids = data['ids'].to(device, dtype = torch.long)
+            mask = data['mask'].to(device, dtype = torch.long)
+            targets = data['targets'].to(device, dtype = torch.long)
+            outputs = model(ids, mask).squeeze()
+            loss = loss_function(outputs, targets)
             tr_loss += loss.item()
-            big_val, big_idx = torch.max(outputs_squeezed.data, dim=1)
+            big_val, big_idx = torch.max(outputs.data, dim=1)
             n_correct += calcuate_accu(big_idx, targets)
 
             nb_tr_steps += 1
-            nb_tr_examples += targets.size(0)
+            nb_tr_examples+=targets.size(0)
             
-            if _ % 5000 == 0:
-                loss_step = tr_loss / nb_tr_steps
-                accu_step = (n_correct * 100) / nb_tr_examples
+            if _%5000==0:
+                loss_step = tr_loss/nb_tr_steps
+                accu_step = (n_correct*100)/nb_tr_examples
                 print(f"Validation Loss per 100 steps: {loss_step}")
                 print(f"Validation Accuracy per 100 steps: {accu_step}")
-                
-    epoch_loss = tr_loss / nb_tr_steps
-    epoch_accu = (n_correct * 100) / nb_tr_examples
+    epoch_loss = tr_loss/nb_tr_steps
+    epoch_accu = (n_correct*100)/nb_tr_examples
     print(f"Validation Loss Epoch: {epoch_loss}")
     print(f"Validation Accuracy Epoch: {epoch_accu}")
     
-    accuracy = epoch_accu
-    return accuracy
+    return epoch_accu
      
 
 print('This is the validation section to print the accuracy and see how it performs')
@@ -231,8 +223,8 @@ acc = valid(model, testing_loader)
 print("Accuracy on test data = %0.2f%%" % acc)  
 
 
-output_model_file = './models/pytorch_distilbert_news.bin'
-output_vocab_file = './models/vocab_distilbert_news.bin'
+output_model_file = '.models/pytorch_distilbert_news.bin'
+output_vocab_file = '.models/vocab_distilbert_news.bin'
 
 model_to_save = model
 torch.save(model_to_save, output_model_file)
@@ -240,4 +232,3 @@ tokenizer.save_vocabulary(output_vocab_file)
 
 print('All files saved')
 print('This tutorial is completed')
-     
